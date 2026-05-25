@@ -17,6 +17,8 @@ is_playing = True  # Whether in game or in menu
 GROUND_Y = 300  # The Y-coordinate of the ground level
 JUMP_GRAVITY_START_SPEED = -20  # The speed at which the player jumps
 players_gravity_speed = 0  # The current speed at which the player falls
+start_time = pygame.time.get_ticks() # returns time since start
+score = 0 # initializes the score
 
 # Load level assets
 SKY_SURF = pygame.image.load("graphics/level/sky.png").convert()
@@ -33,6 +35,11 @@ egg_rect = egg_surf.get_rect(bottomleft=(800, GROUND_Y))
 
 
 while running:
+    # Gets the score based off time survived and renders it center top
+    score = (pygame.time.get_ticks() - start_time) // 10
+    score_surf = game_font.render(str(score), False, "Black")
+    score_rect = score_surf.get_rect(center=(400, 50))
+
     # Poll for events
     for event in pygame.event.get():
         # pygame.QUIT --> user clicked X to close your window
@@ -52,7 +59,7 @@ while running:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 is_playing = True
                 egg_rect.left = 800
-
+                start_time = pygame.time.get_ticks() # Restarts Timer
     if is_playing:
         screen.fill("purple")  # Wipe the screen
 
