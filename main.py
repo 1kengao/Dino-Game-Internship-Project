@@ -5,7 +5,7 @@ Made by intern: @bassemfarid, no one or nothing else. 🤖
 """
 
 import pygame
-import random
+import random # Imported for spawn logic
 
 # Initialize Pygame and create a window
 pygame.init()
@@ -16,7 +16,7 @@ running = True  # Pygame main loop, kills pygame when False
 # Game state variables
 game_active = False  # Rechanged to video version
 GROUND_Y = 300  # The Y-coordinate of the ground level
-FLOAT_Y = 215
+FLOAT_Y = 215  # Y- Coordinate for High Level
 JUMP_GRAVITY_START_SPEED = -20  # The speed at which the player jumps
 players_gravity_speed = 0  # The current speed at which the player falls
 start_time = 0  # Reset to pygame.time.get_ticks() each time the game starts
@@ -32,7 +32,7 @@ small_font = pygame.font.Font("graphics/font/Minecraft.ttf", 24)
 SKY_SURF = pygame.image.load("graphics/level/sky.png").convert_alpha()
 GROUND_SURF = pygame.image.load("graphics/level/ground.png").convert_alpha()
 
-# Load sprite assets
+# Load sprite assets - New Assets Added for Animation
 player_walk = [
     pygame.image.load("graphics/player/player_walk_1.png").convert_alpha(),
     pygame.image.load("graphics/player/player_walk_2.png").convert_alpha(),
@@ -42,6 +42,7 @@ player_index = 0
 player_surf = player_walk[player_index]
 player_rect = player_surf.get_rect(bottomleft=(25, GROUND_Y))
 
+# Load Enemy assets - Also Added Animations 
 egg_frames = [
     pygame.image.load("graphics/egg/egg_1.png").convert_alpha(),
     pygame.image.load("graphics/egg/egg_2.png").convert_alpha(),
@@ -78,7 +79,7 @@ def display_score():
     screen.blit(score_surf, score_rect)
     return current_score
 
-
+# Videos way for Player animations
 def player_animation():
     global player_index, player_surf
     if player_rect.bottom < GROUND_Y:
@@ -89,7 +90,7 @@ def player_animation():
             player_index = 0
         player_surf = player_walk[int(player_index)]
 
-
+# Videos way for Obstacles
 def obstacle_movement(obstacle_list):
     global egg_index, egg_surf
     if obstacle_list:
@@ -104,7 +105,7 @@ def obstacle_movement(obstacle_list):
     else:
         return []
 
-
+# Checks collisions for a list like in video
 def collisions(player, obstacles):
     if obstacles:
         for obstacle_rect in obstacles:
@@ -121,6 +122,7 @@ while running:
             running = False
 
         if game_active:
+            # Spawn Logic thats random
             if event.type == obstacle_timer:
                 if random.randint(0, 2) == 0:
                     spawn_y = FLOAT_Y
@@ -152,7 +154,7 @@ while running:
         player_rect.y += players_gravity_speed
         if player_rect.bottom > GROUND_Y:
             player_rect.bottom = GROUND_Y
-        player_animation()
+        player_animation() # Players Animation
         screen.blit(player_surf, player_rect)
 
         obstacle_rect_list = obstacle_movement(obstacle_rect_list)
