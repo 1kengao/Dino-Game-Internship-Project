@@ -24,6 +24,19 @@ score = 0
 instance_score = 0
 high_score = 0
 
+# Load Difficulty Scaler
+LEVEL_INTERVAL = 50 # The Amount needed to level up
+STARTING_OBSTACLE_SPEED = 8 # Starting speed of objects
+STARTING_SPAWN_INTERVAL = 1400 # Starting rate the Objects spawn 
+SPEED_INCREASE = 1 # Interval that speed increases when leveling up
+SPAWN_DECREASE = 100 # Interval Spawn rate decreases by when leveling up
+MIN_SPAWN_INTERVAL = 600 # limit for spawn rate
+LEVEL_UP_DISPLAY = 500 # How long Level Up png is shown
+level = 1
+obstacle_speed = STARTING_OBSTACLE_SPEED
+spawn_interval = STARTING_SPAWN_INTERVAL
+level_up_time = 0
+
 # Load Font
 game_font = pygame.font.Font("graphics/font/Minecraft.ttf", 48)
 small_font = pygame.font.Font("graphics/font/Minecraft.ttf", 24)
@@ -68,7 +81,9 @@ game_over_rect = game_over_surf.get_rect(center=(400, 130))
 
 obstacle_rect_list = []
 obstacle_timer = pygame.USEREVENT + 1
-pygame.time.set_timer(obstacle_timer, 1400)
+# Switched from constant to Variable to use the level scaling
+pygame.time.set_timer(obstacle_timer, STARTING_SPAWN_INTERVAL) 
+
 
 
 # Videos way of displaying score instead of mine
@@ -99,7 +114,7 @@ def obstacle_movement(obstacle_list):
             egg_index = 0
         egg_surf = egg_frames[int(egg_index)]
         for obstacle_rect in obstacle_list:
-            obstacle_rect.x -= 8
+            obstacle_rect.x -= obstacle_speed
             screen.blit(egg_surf, obstacle_rect)
         return [obstacle for obstacle in obstacle_list if obstacle.right > 0]
     else:
@@ -143,6 +158,12 @@ while running:
                 players_gravity_speed = 0
                 obstacle_rect_list = []
                 start_time = pygame.time.get_ticks()  # Restarts Timer
+                # Rest levels and object difficulty to make sure its not too hard if they play for too long
+                level = 1 
+                obstacle_speed = STARTING_OBSTACLE_SPEED
+                spawn_interval = STARTING_SPAWN_INTERVAL # Changed these to use level variables
+                pygame.time.set_timer(obstacle_timer, spawn_interval)
+                level_up_time = 0
                 game_active = True
 
     if game_active:
@@ -160,7 +181,16 @@ while running:
         obstacle_rect_list = obstacle_movement(obstacle_rect_list)
 
         # Levels 'UP' the player once it reaches a threshold.
-        if score % 25 == 0 and score != 0:
+        if score // LEVEL_INTERVAL + 1 > level:
+            level = score // LEVEL_INTERVAL + 1
+            obstacle_speed += SPEED_INCREASE
+            spawn_interval = max(MIN_SPAWN_INTERVAL, spawn_interval - SPAWN_DECREASE)
+            pygame.time.set_timer(obstacle_timer, spawn_interval)
+            level_up_time = pygame.time.get_ticks()
+
+        # Blits the level up screen for longer. Uses the difference in current time and time it reached
+        # the interval to hold the level up time for level_up_displays length
+        if pygame.time.get_ticks() - level_up_time < LEVEL_UP_DISPLAY:
             screen.blit(level_up_surf, level_up_rect)
 
         if not collisions(player_rect, obstacle_rect_list):
