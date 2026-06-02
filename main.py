@@ -47,10 +47,10 @@ GROUND_SURF = pygame.image.load("graphics/level/ground.png").convert_alpha()
 
 # Load sprite assets - New Assets Added for Animation
 player_walk = [
-    pygame.image.load("graphics/player/player_walk_1.png").convert_alpha(),
-    pygame.image.load("graphics/player/player_walk_2.png").convert_alpha(),
+    pygame.image.load("graphics/player/level_1_walk_1.png").convert_alpha(),
+    pygame.image.load("graphics/player/level_1_walk_2.png").convert_alpha(),
 ]
-player_jump_surf = pygame.image.load("graphics/player/player_jump.png").convert_alpha()
+player_jump_surf = pygame.image.load("graphics/player/level_1_jump.png").convert_alpha()
 player_index = 0
 player_surf = player_walk[player_index]
 player_rect = player_surf.get_rect(bottomleft=(25, GROUND_Y))
@@ -84,7 +84,9 @@ obstacle_timer = pygame.USEREVENT + 1
 # Switched from constant to Variable to use the level scaling
 pygame.time.set_timer(obstacle_timer, STARTING_SPAWN_INTERVAL) 
 
-
+# Changes Character Model Each Level
+def level_up():
+    None
 
 # Videos way of displaying score instead of mine
 def display_score():
