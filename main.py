@@ -57,8 +57,8 @@ player_rect = player_surf.get_rect(bottomleft=(25, GROUND_Y))
 
 # Load Enemy assets - Also Added Animations 
 egg_frames = [
-    pygame.image.load("graphics/egg/egg_1.png").convert_alpha(),
-    pygame.image.load("graphics/egg/egg_2.png").convert_alpha(),
+    pygame.image.load("graphics/enemy/egg_1.png").convert_alpha(),
+    pygame.image.load("graphics/enemy/egg_2.png").convert_alpha(),
 ]
 egg_index = 0
 egg_surf = egg_frames[egg_index]
