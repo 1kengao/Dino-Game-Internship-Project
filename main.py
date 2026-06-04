@@ -44,6 +44,7 @@ small_font = pygame.font.Font("graphics/font/Minecraft.ttf", 24)
 # Load level assets
 SKY_SURF = pygame.image.load("graphics/level/sky.png").convert_alpha()
 GROUND_SURF = pygame.image.load("graphics/level/ground.png").convert_alpha()
+FOREST_SURF = pygame.image.load("graphics/level/forest.jpg").convert_alpha()
 
 # Load sprite assets - New Assets Added for Animation
 player_walk = [
@@ -62,6 +63,27 @@ egg_frames = [
 ]
 egg_index = 0
 egg_surf = egg_frames[egg_index]
+
+# Originals for resetting on restart
+LEVEL_1_WALK = player_walk
+LEVEL_1_JUMP_SURF = player_jump_surf
+DEFAULT_ENEMY_FRAMES = egg_frames
+
+# Cat Used for Level 2 Animations
+LEVEL_2_SIZE = (128, 128)
+LEVEL_2_WALK = [
+    pygame.transform.scale(pygame.image.load("graphics/player/level_2_walk_1.png").convert_alpha(), LEVEL_2_SIZE),
+    pygame.transform.scale(pygame.image.load("graphics/player/level_2_walk_2.png").convert_alpha(), LEVEL_2_SIZE),
+]
+LEVEL_2_JUMP_SURF = pygame.image.load("graphics/player/level_2_jump.png").convert_alpha()
+# Asteroid used for Level 2 Enemies
+ASTEROID_SIZE = (128, 128) # Rescaled as they were too large originally
+ASTEROID_FRAMES = [
+    pygame.transform.scale(pygame.image.load("graphics/enemy/horizontal_fire_1.png").convert_alpha(), ASTEROID_SIZE),
+    pygame.transform.scale(pygame.image.load("graphics/enemy/horizontal_fire_2.png").convert_alpha(), ASTEROID_SIZE),
+    pygame.transform.scale(pygame.image.load("graphics/enemy/horizontal_fire_3.png").convert_alpha(), ASTEROID_SIZE),
+    pygame.transform.scale(pygame.image.load("graphics/enemy/horizontal_fire_4.png").convert_alpha(), ASTEROID_SIZE),
+]
 
 level_up_surf = pygame.image.load("graphics/player/Level Up.png").convert_alpha()
 level_up_rect = level_up_surf.get_rect(center=(400, 200))
@@ -137,7 +159,6 @@ while running:
         # pygame.QUIT --> user clicked X to close your window
         if event.type == pygame.QUIT:
             running = False
-
         if game_active:
             # Spawn Logic thats random
             if event.type == obstacle_timer:
@@ -161,16 +182,23 @@ while running:
                 obstacle_rect_list = []
                 start_time = pygame.time.get_ticks()  # Restarts Timer
                 # Rest levels and object difficulty to make sure its not too hard if they play for too long
-                level = 1 
+                level = 1
                 obstacle_speed = STARTING_OBSTACLE_SPEED
                 spawn_interval = STARTING_SPAWN_INTERVAL # Changed these to use level variables
                 pygame.time.set_timer(obstacle_timer, spawn_interval)
                 level_up_time = 0
+                # Resets to level 1 player and enemy when starting a new run 
+                player_walk = LEVEL_1_WALK
+                player_jump_surf = LEVEL_1_JUMP_SURF
+                egg_frames = DEFAULT_ENEMY_FRAMES
                 game_active = True
 
     if game_active:
-        screen.blit(SKY_SURF, (0, 0))
-        screen.blit(GROUND_SURF, (0, GROUND_Y))
+        if level >= 2:
+            screen.blit(FOREST_SURF, (0,0))
+        else:
+            screen.blit(SKY_SURF, (0, 0))
+            screen.blit(GROUND_SURF, (0, GROUND_Y))
         score = display_score()
 
         players_gravity_speed += 1.75
@@ -189,6 +217,11 @@ while running:
             spawn_interval = max(MIN_SPAWN_INTERVAL, spawn_interval - SPAWN_DECREASE)
             pygame.time.set_timer(obstacle_timer, spawn_interval)
             level_up_time = pygame.time.get_ticks()
+            # Beyond level 2: swap player to Cat and egg to Asteroid
+            if level >= 2:
+                player_walk = LEVEL_2_WALK
+                player_jump_surf = LEVEL_2_JUMP_SURF
+                egg_frames = ASTEROID_FRAMES
 
         # Blits the level up screen for longer. Uses the difference in current time and time it reached
         # the interval to hold the level up time for level_up_displays length
