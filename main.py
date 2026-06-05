@@ -177,7 +177,10 @@ while running:
                 players_gravity_speed = JUMP_GRAVITY_START_SPEED
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                player_rect.bottomleft = (25, GROUND_Y)
+                if level < 2:
+                    player_rect.bottomleft = (25, GROUND_Y)
+                else:
+                    player_rect.bottomleft = (0,0)                     
                 players_gravity_speed = 0
                 obstacle_rect_list = []
                 start_time = pygame.time.get_ticks()  # Restarts Timer
@@ -222,7 +225,6 @@ while running:
                 player_walk = LEVEL_2_WALK
                 player_jump_surf = LEVEL_2_JUMP_SURF
                 egg_frames = ASTEROID_FRAMES
-
         # Blits the level up screen for longer. Uses the difference in current time and time it reached
         # the interval to hold the level up time for level_up_displays length
         if pygame.time.get_ticks() - level_up_time < LEVEL_UP_DISPLAY:
