@@ -6,6 +6,7 @@ Made by intern: @bassemfarid, no one or nothing else. 🤖
 
 import pygame
 import random # Imported for spawn logic
+import math
 
 # Initialize Pygame and create a window
 pygame.init()
@@ -70,14 +71,14 @@ LEVEL_1_JUMP_SURF = player_jump_surf
 DEFAULT_ENEMY_FRAMES = egg_frames
 
 # Cat Used for Level 2 Animations
-LEVEL_2_SIZE = (128, 128)
+LEVEL_2_SIZE = (64, 64)
 LEVEL_2_WALK = [
     pygame.transform.scale(pygame.image.load("graphics/player/level_2_walk_1.png").convert_alpha(), LEVEL_2_SIZE),
     pygame.transform.scale(pygame.image.load("graphics/player/level_2_walk_2.png").convert_alpha(), LEVEL_2_SIZE),
 ]
 LEVEL_2_JUMP_SURF = pygame.image.load("graphics/player/level_2_jump.png").convert_alpha()
 # Asteroid used for Level 2 Enemies
-ASTEROID_SIZE = (128, 128) # Rescaled as they were too large originally
+ASTEROID_SIZE = (64, 64) # Rescaled as they were too large originally
 ASTEROID_FRAMES = [
     pygame.transform.scale(pygame.image.load("graphics/enemy/horizontal_fire_1.png").convert_alpha(), ASTEROID_SIZE),
     pygame.transform.scale(pygame.image.load("graphics/enemy/horizontal_fire_2.png").convert_alpha(), ASTEROID_SIZE),
@@ -100,15 +101,13 @@ prompt_rect = press_space_surf.get_rect(center=(400, 240))
 retry_rect = press_space_surf.get_rect(center=(400, 260))
 game_over_surf = game_font.render("GAME OVER", False, "Black")
 game_over_rect = game_over_surf.get_rect(center=(400, 130))
+mascot_surf = pygame.image.load("graphics/level/mascot.png").convert_alpha()
 
 obstacle_rect_list = []
 obstacle_timer = pygame.USEREVENT + 1
 # Switched from constant to Variable to use the level scaling
 pygame.time.set_timer(obstacle_timer, STARTING_SPAWN_INTERVAL) 
 
-# Changes Character Model Each Level
-def level_up():
-    None
 
 # Videos way of displaying score instead of mine
 def display_score():
@@ -152,6 +151,14 @@ def collisions(player, obstacles):
                 return False
     return True
 
+def animate_mascot():
+    t = pygame.time.get_ticks() / 1000
+    for i, base_x in enumerate((140, 660)):
+        bob = math.sin(t * 3 + i * math.pi) * 12
+        surf = pygame.transform.flip(mascot_surf, i == 1, False)
+        rect = surf.get_rect(center=(base_x, 235 + bob))
+        screen.blit(surf, rect)
+
 
 while running:
     # Poll for events
@@ -177,10 +184,6 @@ while running:
                 players_gravity_speed = JUMP_GRAVITY_START_SPEED
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                if level < 2:
-                    player_rect.bottomleft = (25, GROUND_Y)
-                else:
-                    player_rect.bottomleft = (0,0)                     
                 players_gravity_speed = 0
                 obstacle_rect_list = []
                 start_time = pygame.time.get_ticks()  # Restarts Timer
@@ -190,15 +193,18 @@ while running:
                 spawn_interval = STARTING_SPAWN_INTERVAL # Changed these to use level variables
                 pygame.time.set_timer(obstacle_timer, spawn_interval)
                 level_up_time = 0
-                # Resets to level 1 player and enemy when starting a new run 
+                # Resets to level 1 player and enemy when starting a new run
                 player_walk = LEVEL_1_WALK
                 player_jump_surf = LEVEL_1_JUMP_SURF
                 egg_frames = DEFAULT_ENEMY_FRAMES
+                egg_surf = egg_frames[0]
+                player_rect = player_walk[0].get_rect(bottomleft=(25, GROUND_Y))
                 game_active = True
 
     if game_active:
         if level >= 2:
             screen.blit(FOREST_SURF, (0,0))
+            screen.blit(GROUND_SURF, (0, GROUND_Y))
         else:
             screen.blit(SKY_SURF, (0, 0))
             screen.blit(GROUND_SURF, (0, GROUND_Y))
@@ -224,7 +230,9 @@ while running:
             if level >= 2:
                 player_walk = LEVEL_2_WALK
                 player_jump_surf = LEVEL_2_JUMP_SURF
+                player_rect = player_walk[0].get_rect(midbottom=player_rect.midbottom)
                 egg_frames = ASTEROID_FRAMES
+                egg_surf = egg_frames[0]
         # Blits the level up screen for longer. Uses the difference in current time and time it reached
         # the interval to hold the level up time for level_up_displays length
         if pygame.time.get_ticks() - level_up_time < LEVEL_UP_DISPLAY:
@@ -246,6 +254,7 @@ while running:
             screen.blit(title_surf, title_rect)
             screen.blit(sub_title_surf, sub_title_rect)
             screen.blit(press_space_surf, prompt_rect)
+            animate_mascot()
         else:
             # Game-over view
             screen.blit(game_over_surf, game_over_rect)
