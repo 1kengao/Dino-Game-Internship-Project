@@ -10,7 +10,8 @@ import math
 
 # Initialize Pygame and create a window
 pygame.init()
-screen = pygame.display.set_mode((800, 400))
+pygame.mixer.init()
+screen = pygame.display.set_mode((800, 400), pygame.SCALED)
 clock = pygame.time.Clock()
 running = True  # Pygame main loop, kills pygame when False
 
@@ -45,10 +46,10 @@ small_font = pygame.font.Font("graphics/font/Minecraft.ttf", 24)
 # Load level assets
 SKY_SURF = pygame.image.load("graphics/level/sky.png").convert_alpha()
 GROUND_SURF = pygame.image.load("graphics/level/ground.png").convert_alpha()
-SUNSET_SURF = pygame.image.load("graphics/level/forest.png").convert_alpha()
-# SUNSET_GROUND_SURF = pygame.image.load(PLACEHOLDER)
-FOREST_SURF = pygame.transform.scale(pygame.image.load("graphics/level/sunset.png").convert_alpha(), (800, 400))
-# FOREST_GROUND_SURF = pygame.image.load(PLACEHOLDER)
+FOREST_SURF = pygame.transform.scale(pygame.image.load("graphics/level/forest.png").convert_alpha(), (800, 300))
+FOREST_GROUND_SURF = pygame.image.load("graphics/level/forest_ground.png").convert_alpha()
+SUNSET_SURF = pygame.transform.scale(pygame.image.load("graphics/level/sunset.png").convert_alpha(), (800, 300))
+SUNSET_GROUND_SURF = pygame.image.load("graphics/level/sunset_ground.png").convert_alpha()
 
 # Load sprite assets - New Assets Added for Animation
 player_walk = [
@@ -165,9 +166,11 @@ def obstacle_movement(obstacle_list):
 
 # Checks collisions for a list like in video
 def collisions(player, obstacles):
+    player_hitbox = player_surf.get_bounding_rect().move(player.x, player.y)
     if obstacles:
+        enemy_bb = egg_surf.get_bounding_rect()
         for obstacle_rect in obstacles:
-            if player.colliderect(obstacle_rect):
+            if player_hitbox.colliderect(enemy_bb.move(obstacle_rect.x, obstacle_rect.y)):
                 return False
     return True
 
@@ -179,6 +182,20 @@ def animate_mascot():
         rect = surf.get_rect(center=(base_x, 235 + bob))
         screen.blit(surf, rect)
 
+def load_sound(path):
+    try:
+        return pygame.mixer.Sound(path)
+    except (pygame.error, FileNotFoundError):
+        return None
+
+def play_sound(sound):
+    if sound:
+        sound.play()
+
+jump_sound = load_sound("audio/jump.wav")
+death_sound = load_sound("audio/death.wav")
+level_up_sound = load_sound("audio/level_up.wav")
+
 
 while running:
     # Poll for events
@@ -186,6 +203,8 @@ while running:
         # pygame.QUIT --> user clicked X to close your window
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_f:
+            pygame.display.toggle_fullscreen()
         if game_active:
             # Spawn Logic thats random
             if event.type == obstacle_timer:
@@ -202,6 +221,7 @@ while running:
                 or event.type == pygame.MOUSEBUTTONDOWN
             ) and player_rect.bottom >= GROUND_Y:
                 players_gravity_speed = JUMP_GRAVITY_START_SPEED
+                play_sound(jump_sound)
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 players_gravity_speed = 0
@@ -224,10 +244,10 @@ while running:
     if game_active:
         if level >= 3:
             screen.blit(SUNSET_SURF, (0, 0))
-            screen.blit(GROUND_SURF, (0, GROUND_Y))
+            screen.blit(SUNSET_GROUND_SURF, (0, GROUND_Y))
         elif level >= 2:
             screen.blit(FOREST_SURF, (0,0))
-            screen.blit(GROUND_SURF, (0, GROUND_Y))
+            screen.blit(FOREST_GROUND_SURF, (0, GROUND_Y))
         else:
             screen.blit(SKY_SURF, (0, 0))
             screen.blit(GROUND_SURF, (0, GROUND_Y))
@@ -249,6 +269,7 @@ while running:
             spawn_interval = max(MIN_SPAWN_INTERVAL, spawn_interval - SPAWN_DECREASE)
             pygame.time.set_timer(obstacle_timer, spawn_interval)
             level_up_time = pygame.time.get_ticks()
+            play_sound(level_up_sound)
             # Beyond level 2: swap player to Cat and egg to Asteroid
             if level >= 2:
                 player_walk = LEVEL_2_WALK
@@ -273,6 +294,7 @@ while running:
                 high_score = score
             instance_score = score
             game_active = False
+            play_sound(death_sound)
 
     else:
         # Remade Menu and Game Over Screen into combined one
