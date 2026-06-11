@@ -45,7 +45,10 @@ small_font = pygame.font.Font("graphics/font/Minecraft.ttf", 24)
 # Load level assets
 SKY_SURF = pygame.image.load("graphics/level/sky.png").convert_alpha()
 GROUND_SURF = pygame.image.load("graphics/level/ground.png").convert_alpha()
-FOREST_SURF = pygame.image.load("graphics/level/forest.jpg").convert_alpha()
+SUNSET_SURF = pygame.image.load("graphics/level/forest.png").convert_alpha()
+# SUNSET_GROUND_SURF = pygame.image.load(PLACEHOLDER)
+FOREST_SURF = pygame.transform.scale(pygame.image.load("graphics/level/sunset.png").convert_alpha(), (800, 400))
+# FOREST_GROUND_SURF = pygame.image.load(PLACEHOLDER)
 
 # Load sprite assets - New Assets Added for Animation
 player_walk = [
@@ -76,7 +79,7 @@ LEVEL_2_WALK = [
     pygame.transform.scale(pygame.image.load("graphics/player/level_2_walk_1.png").convert_alpha(), LEVEL_2_SIZE),
     pygame.transform.scale(pygame.image.load("graphics/player/level_2_walk_2.png").convert_alpha(), LEVEL_2_SIZE),
 ]
-LEVEL_2_JUMP_SURF = pygame.image.load("graphics/player/level_2_jump.png").convert_alpha()
+LEVEL_2_JUMP_SURF = pygame.transform.scale(pygame.image.load("graphics/player/level_2_jump.png").convert_alpha(), LEVEL_2_SIZE)
 # Asteroid used for Level 2 Enemies
 ASTEROID_SIZE = (64, 64) # Rescaled as they were too large originally
 ASTEROID_FRAMES = [
@@ -84,6 +87,23 @@ ASTEROID_FRAMES = [
     pygame.transform.scale(pygame.image.load("graphics/enemy/horizontal_fire_2.png").convert_alpha(), ASTEROID_SIZE),
     pygame.transform.scale(pygame.image.load("graphics/enemy/horizontal_fire_3.png").convert_alpha(), ASTEROID_SIZE),
     pygame.transform.scale(pygame.image.load("graphics/enemy/horizontal_fire_4.png").convert_alpha(), ASTEROID_SIZE),
+]
+
+# Level 3 Player Animations 
+LEVEL_3_SIZE = (100, 100)
+LEVEL_3_WALK = [
+    pygame.transform.scale(pygame.image.load("graphics/player/level_3_walk_1.png").convert_alpha(), LEVEL_3_SIZE),
+    pygame.transform.scale(pygame.image.load("graphics/player/level_3_walk_2.png").convert_alpha(), LEVEL_3_SIZE),
+]
+LEVEL_3_JUMP_SURF = LEVEL_3_WALK[0]  # placeholder 
+
+# Recolored Fire used for Level 3 Enemies
+RECOLORED_FIRE_SIZE = (64, 64)
+RECOLORED_FIRE_FRAMES = [
+    pygame.transform.scale(pygame.image.load("graphics/enemy/recolored_fire_1.png").convert_alpha(), RECOLORED_FIRE_SIZE),
+    pygame.transform.scale(pygame.image.load("graphics/enemy/recolored_fire_2.png").convert_alpha(), RECOLORED_FIRE_SIZE),
+    pygame.transform.scale(pygame.image.load("graphics/enemy/recolored_fire_3.png").convert_alpha(), RECOLORED_FIRE_SIZE),
+    pygame.transform.scale(pygame.image.load("graphics/enemy/recolored_fire_4.png").convert_alpha(), RECOLORED_FIRE_SIZE),
 ]
 
 level_up_surf = pygame.image.load("graphics/player/Level Up.png").convert_alpha()
@@ -202,7 +222,10 @@ while running:
                 game_active = True
 
     if game_active:
-        if level >= 2:
+        if level >= 3:
+            screen.blit(SUNSET_SURF, (0, 0))
+            screen.blit(GROUND_SURF, (0, GROUND_Y))
+        elif level >= 2:
             screen.blit(FOREST_SURF, (0,0))
             screen.blit(GROUND_SURF, (0, GROUND_Y))
         else:
@@ -210,7 +233,7 @@ while running:
             screen.blit(GROUND_SURF, (0, GROUND_Y))
         score = display_score()
 
-        players_gravity_speed += 1.75
+        players_gravity_speed += 1.2
         player_rect.y += players_gravity_speed
         if player_rect.bottom > GROUND_Y:
             player_rect.bottom = GROUND_Y
@@ -232,6 +255,13 @@ while running:
                 player_jump_surf = LEVEL_2_JUMP_SURF
                 player_rect = player_walk[0].get_rect(midbottom=player_rect.midbottom)
                 egg_frames = ASTEROID_FRAMES
+                egg_surf = egg_frames[0]
+            # Level 3: swap to Level 3 player and Recolored Fire enemy
+            if level >= 3:
+                player_walk = LEVEL_3_WALK
+                player_jump_surf = LEVEL_3_JUMP_SURF
+                player_rect = player_walk[0].get_rect(midbottom=player_rect.midbottom)
+                egg_frames = RECOLORED_FIRE_FRAMES
                 egg_surf = egg_frames[0]
         # Blits the level up screen for longer. Uses the difference in current time and time it reached
         # the interval to hold the level up time for level_up_displays length
