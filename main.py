@@ -39,6 +39,16 @@ obstacle_speed = STARTING_OBSTACLE_SPEED
 spawn_interval = STARTING_SPAWN_INTERVAL
 level_up_time = 0
 
+# Boss Variables
+BOSS_LEVEL = 4
+BOSS_DURATION = 20000
+BOSS_SPAWN_INTERVAL = 750
+BOSS_OBSTACLE_SPEED = 10
+boss_active = False
+boss_start_time = 0
+boss_defeated_time = 0
+level_offset = 0
+
 # Load Font
 game_font = pygame.font.Font("graphics/font/Minecraft.ttf", 48)
 small_font = pygame.font.Font("graphics/font/Minecraft.ttf", 24)
@@ -50,6 +60,8 @@ FOREST_SURF = pygame.transform.scale(pygame.image.load("graphics/level/forest.pn
 FOREST_GROUND_SURF = pygame.image.load("graphics/level/forest_ground.png").convert_alpha()
 SUNSET_SURF = pygame.transform.scale(pygame.image.load("graphics/level/sunset.png").convert_alpha(), (800, 300))
 SUNSET_GROUND_SURF = pygame.image.load("graphics/level/sunset_ground.png").convert_alpha()
+BOSS_BACKGROUND_SURF = pygame.transform.scale(pygame.image.load("graphics/level/boss_background.png").convert_alpha(), (800, 400))
+BOSS_BACKGROUND_BOTTOM_SURF = pygame.image.load("graphics/level/boss_background_bottom.png").convert_alpha()
 
 # Load sprite assets - New Assets Added for Animation
 player_walk = [
@@ -107,6 +119,14 @@ RECOLORED_FIRE_FRAMES = [
     pygame.transform.scale(pygame.image.load("graphics/enemy/recolored_fire_4.png").convert_alpha(), RECOLORED_FIRE_SIZE),
 ]
 
+# Free Asset Gotten off Online
+LEVEL_4_SIZE = (78, 78)
+LEVEL_4_WALK = [
+    pygame.transform.scale(pygame.image.load("graphics/player/level_4_walk_1.png").convert_alpha(), LEVEL_4_SIZE),
+    pygame.transform.scale(pygame.image.load("graphics/player/level_4_walk_2.png").convert_alpha(), LEVEL_4_SIZE),
+]
+LEVEL_4_JUMP_SURF = pygame.transform.scale(pygame.image.load("graphics/player/level_4_jump.png").convert_alpha(), LEVEL_4_SIZE)
+
 level_up_surf = pygame.image.load("graphics/player/Level Up.png").convert_alpha()
 level_up_rect = level_up_surf.get_rect(center=(400, 200))
 
@@ -123,6 +143,10 @@ retry_rect = press_space_surf.get_rect(center=(400, 260))
 game_over_surf = game_font.render("GAME OVER", False, "Black")
 game_over_rect = game_over_surf.get_rect(center=(400, 130))
 mascot_surf = pygame.image.load("graphics/level/mascot.png").convert_alpha()
+boss_defeated_surf = game_font.render("BOSS DEFEATED", False, "Black")
+boss_defeated_rect = boss_defeated_surf.get_rect(center=(400, 250))
+fullscreen_hint_surf = small_font.render("Press F for Fullscreen", False, "Black")
+fullscreen_hint_rect = fullscreen_hint_surf.get_rect(center=(400, 385))
 
 obstacle_rect_list = []
 obstacle_timer = pygame.USEREVENT + 1
@@ -182,6 +206,16 @@ def animate_mascot():
         rect = surf.get_rect(center=(base_x, 235 + bob))
         screen.blit(surf, rect)
 
+# Boss Bar Animation (Health Bar but its just based off time) and Boss Animation (Up and Down)
+def draw_boss(fraction):
+    t = pygame.time.get_ticks() / 1000
+    bob = math.sin(t * 2) * 10
+    boss = pygame.transform.scale(mascot_surf, (150, 150))
+    screen.blit(boss, boss.get_rect(center=(670, 150 + bob)))
+    pygame.draw.rect(screen, "red", (250, 12, 300, 10))
+    pygame.draw.rect(screen, "green", (250, 12, int(300 * fraction), 10))
+    pygame.draw.rect(screen, "black", (250, 12, 300, 10), 2)
+
 def load_sound(path):
     try:
         return pygame.mixer.Sound(path)
@@ -195,6 +229,7 @@ def play_sound(sound):
 jump_sound = load_sound("audio/jump.wav")
 death_sound = load_sound("audio/death.wav")
 level_up_sound = load_sound("audio/level_up.wav")
+boss_defeated_sound = load_sound("audio/boss_defeated.wav")
 
 
 while running:
@@ -204,9 +239,10 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.KEYDOWN and event.key == pygame.K_f:
+            # When the user presses F, it turns into full screen
             pygame.display.toggle_fullscreen()
         if game_active:
-            # Spawn Logic thats random
+            # Random Enemy Spawn Logic
             if event.type == obstacle_timer:
                 if random.randint(0, 2) == 0:
                     spawn_y = FLOAT_Y
@@ -224,16 +260,18 @@ while running:
                 play_sound(jump_sound)
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                # Resets Everything for Next Run
                 players_gravity_speed = 0
                 obstacle_rect_list = []
-                start_time = pygame.time.get_ticks()  # Restarts Timer
-                # Rest levels and object difficulty to make sure its not too hard if they play for too long
+                start_time = pygame.time.get_ticks()
+                boss_active = False
+                boss_defeated_time = 0
+                level_offset = 0
                 level = 1
                 obstacle_speed = STARTING_OBSTACLE_SPEED
                 spawn_interval = STARTING_SPAWN_INTERVAL # Changed these to use level variables
                 pygame.time.set_timer(obstacle_timer, spawn_interval)
                 level_up_time = 0
-                # Resets to level 1 player and enemy when starting a new run
                 player_walk = LEVEL_1_WALK
                 player_jump_surf = LEVEL_1_JUMP_SURF
                 egg_frames = DEFAULT_ENEMY_FRAMES
@@ -242,7 +280,10 @@ while running:
                 game_active = True
 
     if game_active:
-        if level >= 3:
+        if boss_active:
+            screen.blit(BOSS_BACKGROUND_SURF, (0, 0))
+            screen.blit(BOSS_BACKGROUND_BOTTOM_SURF, (0, GROUND_Y))
+        elif level >= 3:
             screen.blit(SUNSET_SURF, (0, 0))
             screen.blit(SUNSET_GROUND_SURF, (0, GROUND_Y))
         elif level >= 2:
@@ -263,8 +304,8 @@ while running:
         obstacle_rect_list = obstacle_movement(obstacle_rect_list)
 
         # Levels 'UP' the player once it reaches a threshold.
-        if score // LEVEL_INTERVAL + 1 > level:
-            level = score // LEVEL_INTERVAL + 1
+        if not boss_active and (score - level_offset) // LEVEL_INTERVAL + 1 > level:
+            level = (score - level_offset) // LEVEL_INTERVAL + 1
             obstacle_speed += SPEED_INCREASE
             spawn_interval = max(MIN_SPAWN_INTERVAL, spawn_interval - SPAWN_DECREASE)
             pygame.time.set_timer(obstacle_timer, spawn_interval)
@@ -284,10 +325,45 @@ while running:
                 player_rect = player_walk[0].get_rect(midbottom=player_rect.midbottom)
                 egg_frames = RECOLORED_FIRE_FRAMES
                 egg_surf = egg_frames[0]
+            if level >= BOSS_LEVEL:
+                boss_active = True
+                boss_start_time = pygame.time.get_ticks()
+                obstacle_speed = BOSS_OBSTACLE_SPEED
+                egg_frames = DEFAULT_ENEMY_FRAMES
+                egg_surf = egg_frames[0]
+                player_walk = LEVEL_4_WALK
+                player_jump_surf = LEVEL_4_JUMP_SURF
+                player_rect = player_walk[0].get_rect(midbottom=player_rect.midbottom)
+                pygame.time.set_timer(obstacle_timer, BOSS_SPAWN_INTERVAL)
         # Blits the level up screen for longer. Uses the difference in current time and time it reached
         # the interval to hold the level up time for level_up_displays length
-        if pygame.time.get_ticks() - level_up_time < LEVEL_UP_DISPLAY:
+        if level_up_time and pygame.time.get_ticks() - level_up_time < LEVEL_UP_DISPLAY:
             screen.blit(level_up_surf, level_up_rect)
+
+        # Boss Fight
+        if boss_active:
+            boss_fraction = 1 - (pygame.time.get_ticks() - boss_start_time) / BOSS_DURATION
+            draw_boss(boss_fraction)
+            # Whenever Boss Fight is finished, it resets everything similar to a game restart
+            if boss_fraction <= 0:
+                boss_active = False
+                boss_defeated_time = pygame.time.get_ticks()
+                play_sound(boss_defeated_sound)
+                level_offset = score
+                level = 1
+                obstacle_speed = STARTING_OBSTACLE_SPEED
+                spawn_interval = STARTING_SPAWN_INTERVAL
+                pygame.time.set_timer(obstacle_timer, spawn_interval)
+                obstacle_rect_list = []
+                player_walk = LEVEL_1_WALK
+                player_jump_surf = LEVEL_1_JUMP_SURF
+                player_rect = player_walk[0].get_rect(bottomleft=(25, GROUND_Y))
+                egg_frames = DEFAULT_ENEMY_FRAMES
+                egg_surf = egg_frames[0]
+
+        # When Bossfight is finished, it shows boss defeated aswell
+        if boss_defeated_time and pygame.time.get_ticks() - boss_defeated_time < 1500:
+            screen.blit(boss_defeated_surf, boss_defeated_rect)
 
         if not collisions(player_rect, obstacle_rect_list):
             if score > high_score:
@@ -317,6 +393,8 @@ while running:
             final_score_rect = final_score_surf.get_rect(center=(400, 200))
             screen.blit(final_score_surf, final_score_rect)
             screen.blit(press_space_surf, retry_rect)
+
+        screen.blit(fullscreen_hint_surf, fullscreen_hint_rect)
 
     # flip the display to put your work on screen
     pygame.display.flip()
